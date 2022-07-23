@@ -30,7 +30,7 @@ public class BeerController {
     private final BeerService beerService;
 
     @GetMapping(produces = { "application/json" }, path = "beer")
-    public ResponseEntity<BeerPagedList> listBeers(@RequestParam(value = "pageNumber", required = false) Integer pageNumber,
+    public ResponseEntity<Mono<BeerPagedList>> listBeers(@RequestParam(value = "pageNumber", required = false) Integer pageNumber,
                                                    @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                                    @RequestParam(value = "beerName", required = false) String beerName,
                                                    @RequestParam(value = "beerStyle", required = false) BeerStyleEnum beerStyle,
@@ -48,9 +48,9 @@ public class BeerController {
             pageSize = DEFAULT_PAGE_SIZE;
         }
 
-        BeerPagedList beerList = beerService.listBeers(beerName, beerStyle, PageRequest.of(pageNumber, pageSize), showInventoryOnHand);
+        var beerList = beerService.listBeers(beerName, beerStyle, PageRequest.of(pageNumber, pageSize), showInventoryOnHand);
 
-        return new ResponseEntity<>(beerList, HttpStatus.OK);
+        return ResponseEntity.ok(Mono.just(beerList));
     }
 
   @GetMapping("beer/{beerId}")
@@ -63,10 +63,11 @@ public class BeerController {
     return ResponseEntity.ok(Mono.just(beer));
   }
 
-    @GetMapping("beerUpc/{upc}")
-    public ResponseEntity<BeerDto> getBeerByUpc(@PathVariable("upc") String upc){
-        return new ResponseEntity<>(beerService.getByUpc(upc), HttpStatus.OK);
-    }
+  @GetMapping("beerUpc/{upc}")
+  public ResponseEntity<Mono<BeerDto>> getBeerByUpc(@PathVariable("upc") String upc) {
+    var beer = beerService.getByUpc(upc);
+    return ResponseEntity.ok(Mono.just(beer));
+  }
 
     @PostMapping(path = "beer")
     public ResponseEntity saveNewBeer(@RequestBody @Validated BeerDto beerDto){
