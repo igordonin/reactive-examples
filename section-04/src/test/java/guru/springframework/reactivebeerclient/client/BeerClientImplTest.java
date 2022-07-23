@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 class BeerClientImplTest {
 
@@ -41,7 +42,7 @@ class BeerClientImplTest {
     var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
     var beerPagedList = beerPagedListMono.block();
 
-    var beerId = beerPagedList.stream().findFirst().orElse(null).getId();
+    var beerId = beerPagedList.stream().findFirst().get().getId();
 
     var beerDtoMono = beerClient.getBeerById(beerId, true);
 
@@ -97,7 +98,20 @@ class BeerClientImplTest {
   }
 
   @Test
-  void updatedBeer() {}
+  void updateBeer() {
+    var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+    var beerPagedList = beerPagedListMono.block();
+
+    var beerDto = beerPagedList.stream().findFirst().get();
+    var beerId = beerDto.getId();
+
+    beerDto.setId(null); // this is a really stupid requirement from the server
+    beerDto.setBeerName("Updated Beer Name");
+
+    var response = beerClient.updateBeer(beerId, beerDto).block();
+
+    assertThat(response.getStatusCode()).isEqualTo(NO_CONTENT);
+  }
 
   @Test
   void deleteById() {}

@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static guru.springframework.reactivebeerclient.config.WebClientProperties.BEER_V1_PATH;
+import static guru.springframework.reactivebeerclient.config.WebClientProperties.BEER_V1_PATH_GET_BY_ID;
 
 @Service
 @RequiredArgsConstructor
@@ -71,8 +72,13 @@ public class BeerClientImpl implements BeerClient {
   }
 
   @Override
-  public Mono<ResponseEntity<Void>> updatedBeer(BeerDto beerDto) {
-    return null;
+  public Mono<ResponseEntity<Void>> updateBeer(UUID id, BeerDto beerDto) {
+    return this.webClient
+        .put()
+        .uri(uriBuilder -> uriBuilder.path(BEER_V1_PATH_GET_BY_ID).build(id.toString()))
+        .body(BodyInserters.fromValue(beerDto))
+        .retrieve()
+        .toBodilessEntity();
   }
 
   @Override
