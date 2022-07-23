@@ -114,7 +114,17 @@ class BeerClientImplTest {
   }
 
   @Test
-  void deleteById() {}
+  void deleteById() {
+    var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+    var beerPagedList = beerPagedListMono.block();
+
+    var beerDto = beerPagedList.stream().findFirst().get();
+    var beerId = beerDto.getId();
+
+    var response = beerClient.deleteById(beerId).block();
+
+    assertThat(response.getStatusCode()).isEqualTo(NO_CONTENT);
+  }
 
   @Test
   void getBeerByUpc() {
