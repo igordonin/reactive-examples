@@ -1,12 +1,16 @@
 package guru.springframework.reactivebeerclient.client;
 
 import guru.springframework.reactivebeerclient.config.WebClientConfig;
+import guru.springframework.reactivebeerclient.model.BeerDto;
 import guru.springframework.reactivebeerclient.model.BeerPagedList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpStatus.CREATED;
 
 class BeerClientImplTest {
 
@@ -78,7 +82,19 @@ class BeerClientImplTest {
   }
 
   @Test
-  void createBeer() {}
+  void createBeer() {
+    var beerDto =
+        BeerDto.builder()
+            .beerName("Dogfinished 90 Min IPA")
+            .beerStyle("IPA")
+            .upc("12312")
+            .price(new BigDecimal("10.99"))
+            .build();
+
+    var response = beerClient.createBeer(beerDto).block();
+
+    assertThat(response.getStatusCode()).isEqualTo(CREATED);
+  }
 
   @Test
   void updatedBeer() {}

@@ -6,11 +6,14 @@ import guru.springframework.reactivebeerclient.model.BeerPagedList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.UUID;
+
+import static guru.springframework.reactivebeerclient.config.WebClientProperties.BEER_V1_PATH;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +48,7 @@ public class BeerClientImpl implements BeerClient {
         .uri(
             uriBuilder ->
                 uriBuilder
-                    .path(WebClientProperties.BEER_V1_PATH)
+                    .path(BEER_V1_PATH)
                     .queryParamIfPresent("pageNumber", Optional.ofNullable(pageNumber))
                     .queryParamIfPresent("pageSize", Optional.ofNullable(pageSize))
                     .queryParamIfPresent("beerName", Optional.ofNullable(beerName))
@@ -59,7 +62,12 @@ public class BeerClientImpl implements BeerClient {
 
   @Override
   public Mono<ResponseEntity<Void>> createBeer(BeerDto beerDto) {
-    return null;
+    return this.webClient
+        .post()
+        .uri(uriBuilder -> uriBuilder.path(BEER_V1_PATH).build())
+        .body(BodyInserters.fromValue(beerDto))
+        .retrieve()
+        .toBodilessEntity();
   }
 
   @Override
