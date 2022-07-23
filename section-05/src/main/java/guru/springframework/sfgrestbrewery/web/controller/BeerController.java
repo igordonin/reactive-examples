@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -51,15 +53,15 @@ public class BeerController {
         return new ResponseEntity<>(beerList, HttpStatus.OK);
     }
 
-    @GetMapping("beer/{beerId}")
-    public ResponseEntity<BeerDto> getBeerById(@PathVariable("beerId") UUID beerId,
-                                               @RequestParam(value = "showInventoryOnHand", required = false) Boolean showInventoryOnHand){
-        if (showInventoryOnHand == null) {
-            showInventoryOnHand = false;
-        }
+  @GetMapping("beer/{beerId}")
+  public ResponseEntity<Mono<BeerDto>> getBeerById(
+      @PathVariable("beerId") UUID beerId,
+      @RequestParam(value = "showInventoryOnHand", required = false) Boolean showInventoryOnHand) {
 
-        return new ResponseEntity<>(beerService.getById(beerId, showInventoryOnHand), HttpStatus.OK);
-    }
+    var beer = beerService.getById(beerId, Optional.ofNullable(showInventoryOnHand).orElse(false));
+
+    return ResponseEntity.ok(Mono.just(beer));
+  }
 
     @GetMapping("beerUpc/{upc}")
     public ResponseEntity<BeerDto> getBeerByUpc(@PathVariable("upc") String upc){

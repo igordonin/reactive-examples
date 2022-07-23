@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.UUID;
@@ -16,6 +15,7 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @WebFluxTest(BeerController.class)
 public class BeerControllerTest {
@@ -44,7 +44,7 @@ public class BeerControllerTest {
     webTestClient
         .get()
         .uri("/api/v1/beer/" + beerId)
-        .accept(MediaType.APPLICATION_JSON)
+        .accept(APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isOk()
