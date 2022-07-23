@@ -18,7 +18,34 @@ class BeerClientImplTest {
   }
 
   @Test
-  void getBeerById() {}
+  void getBeerById() {
+    var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+    var beerPagedList = beerPagedListMono.block();
+
+    var beerId = beerPagedList.stream().findFirst().orElse(null).getId();
+
+    var beerDtoMono = beerClient.getBeerById(beerId, false);
+
+    var beerDto = beerDtoMono.block();
+
+    assertThat(beerDto.getId()).isEqualTo(beerId);
+    assertThat(beerDto.getQuantityOnHand()).isNull();
+  }
+
+  @Test
+  void getBeerByIdShowInventoryTrue() {
+    var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+    var beerPagedList = beerPagedListMono.block();
+
+    var beerId = beerPagedList.stream().findFirst().orElse(null).getId();
+
+    var beerDtoMono = beerClient.getBeerById(beerId, true);
+
+    var beerDto = beerDtoMono.block();
+
+    assertThat(beerDto.getId()).isEqualTo(beerId);
+    assertThat(beerDto.getQuantityOnHand()).isNotNull();
+  }
 
   @Test
   void listBeers() {
@@ -60,5 +87,14 @@ class BeerClientImplTest {
   void deleteById() {}
 
   @Test
-  void getBeerByUpc() {}
+  void getBeerByUpc() {
+    var beerPagedListMono = beerClient.listBeers(null, null, null, null, null);
+    var beerPagedList = beerPagedListMono.block();
+
+    var upc = beerPagedList.stream().findFirst().get().getUpc();
+
+    var beerDto = this.beerClient.getBeerByUpc(upc).block();
+
+    assertThat(beerDto.getUpc()).isEqualTo(upc);
+  }
 }
