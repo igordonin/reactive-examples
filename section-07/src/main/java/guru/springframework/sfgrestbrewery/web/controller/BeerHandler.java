@@ -1,12 +1,15 @@
 package guru.springframework.sfgrestbrewery.web.controller;
 
 import guru.springframework.sfgrestbrewery.services.BeerService;
+import guru.springframework.sfgrestbrewery.web.model.BeerDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+
+import static guru.springframework.sfgrestbrewery.web.controller.BeerRouterConfig.BEER_URL;
 
 @Slf4j
 @Component
@@ -31,5 +34,15 @@ public class BeerHandler {
         .getByUpc(upc)
         .flatMap(beerDto -> ServerResponse.ok().bodyValue(beerDto))
         .switchIfEmpty(ServerResponse.notFound().build());
+  }
+
+  public Mono<ServerResponse> saveBeer(ServerRequest serverRequest) {
+    var beerDtoMono = serverRequest.bodyToMono(BeerDto.class);
+
+    return beerService
+        .saveBeer(beerDtoMono)
+        .flatMap(
+            beerDto ->
+                ServerResponse.ok().header("location", BEER_URL + "/" + beerDto.getId()).build());
   }
 }
