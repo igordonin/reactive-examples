@@ -2,7 +2,6 @@ package guru.springframework.sfgrestbrewery.services;
 
 import guru.springframework.sfgrestbrewery.domain.Beer;
 import guru.springframework.sfgrestbrewery.repositories.BeerRepository;
-import guru.springframework.sfgrestbrewery.web.controller.NotFoundException;
 import guru.springframework.sfgrestbrewery.web.mappers.BeerMapper;
 import guru.springframework.sfgrestbrewery.web.model.BeerDto;
 import guru.springframework.sfgrestbrewery.web.model.BeerPagedList;
@@ -10,108 +9,106 @@ import guru.springframework.sfgrestbrewery.web.model.BeerStyleEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
-import java.util.UUID;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Created by jt on 2019-04-20.
- */
+/** Created by jt on 2019-04-20. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BeerServiceImpl implements BeerService {
-    private final BeerRepository beerRepository;
-    private final BeerMapper beerMapper;
+  private final BeerRepository beerRepository;
+  private final BeerMapper beerMapper;
+  private final R2dbcEntityTemplate template;
 
-    @Cacheable(cacheNames = "beerListCache", condition = "#showInventoryOnHand == false ")
-    @Override
-    public BeerPagedList listBeers(String beerName, BeerStyleEnum beerStyle, PageRequest pageRequest, Boolean showInventoryOnHand) {
+  @Cacheable(cacheNames = "beerListCache", condition = "#showInventoryOnHand == false ")
+  @Override
+  public Mono<BeerPagedList> listBeers(
+      String beerName,
+      BeerStyleEnum beerStyle,
+      PageRequest pageRequest,
+      Boolean showInventoryOnHand) {
 
-        BeerPagedList beerPagedList;
-        Page<Beer> beerPage;
+    var optionalBeerStyle = Optional.ofNullable(beerStyle);
 
-        if (!StringUtils.isEmpty(beerName) && !StringUtils.isEmpty(beerStyle)) {
-            //search both
-            beerPage = beerRepository.findAllByBeerNameAndBeerStyle(beerName, beerStyle, pageRequest);
-        } else if (!StringUtils.isEmpty(beerName) && StringUtils.isEmpty(beerStyle)) {
-            //search beer_service name
-            beerPage = beerRepository.findAllByBeerName(beerName, pageRequest);
-        } else if (StringUtils.isEmpty(beerName) && !StringUtils.isEmpty(beerStyle)) {
-            //search beer_service style
-            beerPage = beerRepository.findAllByBeerStyle(beerStyle, pageRequest);
-        } else {
-            beerPage = beerRepository.findAll(pageRequest);
-        }
-
-        if (showInventoryOnHand){
-            beerPagedList = new BeerPagedList(beerPage
-                    .getContent()
-                    .stream()
-                    .map(beerMapper::beerToBeerDtoWithInventory)
-                    .collect(Collectors.toList()),
-                    PageRequest
-                            .of(beerPage.getPageable().getPageNumber(),
-                                    beerPage.getPageable().getPageSize()),
-                    beerPage.getTotalElements());
-        } else {
-            beerPagedList = new BeerPagedList(beerPage
-                    .getContent()
-                    .stream()
-                    .map(beerMapper::beerToBeerDto)
-                    .collect(Collectors.toList()),
-                    PageRequest
-                            .of(beerPage.getPageable().getPageNumber(),
-                                    beerPage.getPageable().getPageSize()),
-                    beerPage.getTotalElements());
-        }
-
-        return beerPagedList;
+    Query query = Query.empty();
+    if (!beerName.isBlank() && optionalBeerStyle.isPresent()) {
+      query = Query.query(Criteria.where("beerName").is(beerName).and("beerStyle").is(beerStyle));
+    } else if (!beerName.isBlank() && optionalBeerStyle.isEmpty()) {
+      query = Query.query(Criteria.where("beerName").is(beerName));
+    } else if (beerName.isBlank() && optionalBeerStyle.isPresent()) {
+      query = Query.query(Criteria.where("beerStyle").is(beerStyle));
     }
 
-    @Cacheable(cacheNames = "beerCache", key = "#beerId", condition = "#showInventoryOnHand == false ")
-    @Override
-    public BeerDto getById(UUID beerId, Boolean showInventoryOnHand) {
-        if (showInventoryOnHand) {
-            return beerMapper.beerToBeerDtoWithInventory(
-                    beerRepository.findById(beerId).orElseThrow(NotFoundException::new)
-            );
-        } else {
-            return beerMapper.beerToBeerDto(
-                    beerRepository.findById(beerId).orElseThrow(NotFoundException::new)
-            );
-        }
+    return template
+        .select(Beer.class)
+        .matching(query.with(pageRequest))
+        .all()
+        .map(beerMapper::beerToBeerDto)
+        .collect(Collectors.toList())
+        .map(
+            beers ->
+                new BeerPagedList(
+                    beers,
+                    PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize()),
+                    beers.size()));
+  }
+
+  @Cacheable(
+      cacheNames = "beerCache",
+      key = "#beerId",
+      condition = "#showInventoryOnHand == false ")
+  @Override
+  public Mono<BeerDto> getById(Integer beerId, Boolean showInventoryOnHand) {
+    if (showInventoryOnHand) {
+      return beerRepository.findById(beerId).map(beerMapper::beerToBeerDtoWithInventory);
     }
 
-    @Override
-    public BeerDto saveNewBeer(BeerDto beerDto) {
-        return beerMapper.beerToBeerDto(beerRepository.save(beerMapper.beerDtoToBeer(beerDto)));
-    }
+    return beerRepository.findById(beerId).map(beerMapper::beerToBeerDto);
+  }
 
-    @Override
-    public BeerDto updateBeer(UUID beerId, BeerDto beerDto) {
-        Beer beer = beerRepository.findById(beerId).orElseThrow(NotFoundException::new);
+  @Override
+  public Mono<BeerDto> saveNewBeer(BeerDto beerDto) {
+    return beerRepository.save(beerMapper.beerDtoToBeer(beerDto)).map(beerMapper::beerToBeerDto);
+  }
 
-        beer.setBeerName(beerDto.getBeerName());
-        beer.setBeerStyle(BeerStyleEnum.PILSNER.valueOf(beerDto.getBeerStyle()));
-        beer.setPrice(beerDto.getPrice());
-        beer.setUpc(beerDto.getUpc());
+  @Override
+  public Mono<BeerDto> updateBeer(Integer beerId, BeerDto beerDto) {
+    return beerRepository
+        .findById(beerId)
+        // I just rather throw an exception here, but JT provided an empty object which for me
+        // does not make any sense
+        //        .switchIfEmpty(Mono.error(new Exception("Bad Request")))
+        .defaultIfEmpty(Beer.builder().build())
+        .map(
+            beer -> {
+              beer.setBeerName(beerDto.getBeerName());
+              beer.setBeerStyle(BeerStyleEnum.valueOf(beerDto.getBeerStyle()));
+              beer.setPrice(beerDto.getPrice());
+              beer.setUpc(beerDto.getUpc());
 
-        return beerMapper.beerToBeerDto(beerRepository.save(beer));
-    }
+              return beer;
+            })
+        .flatMap(beerRepository::save)
+        .map(beerMapper::beerToBeerDto);
+  }
 
-    @Cacheable(cacheNames = "beerUpcCache")
-    @Override
-    public BeerDto getByUpc(String upc) {
-        return beerMapper.beerToBeerDto(beerRepository.findByUpc(upc));
-    }
+  @Cacheable(cacheNames = "beerUpcCache")
+  @Override
+  public Mono<BeerDto> getByUpc(String upc) {
+    return beerRepository.findByUpc(upc).map(beerMapper::beerToBeerDto);
+  }
 
-    @Override
-    public void deleteBeerById(UUID beerId) {
-        beerRepository.deleteById(beerId);
-    }
+  // I don't like it not returning a Mono<Void>.
+  @Override
+  public void deleteBeerById(Integer beerId) {
+    beerRepository.deleteById(beerId).subscribe();
+  }
 }

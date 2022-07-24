@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
@@ -46,7 +47,7 @@ public class BeerControllerTest {
 
     BeerPagedList beerPagedList = new BeerPagedList(beers, PageRequest.of(0, 10), beers.size());
 
-    given(beerService.listBeers(any(), any(), any(), any())).willReturn(beerPagedList);
+    given(beerService.listBeers(any(), any(), any(), any())).willReturn(Mono.just(beerPagedList));
 
     webTestClient
         .get()
@@ -60,7 +61,7 @@ public class BeerControllerTest {
 
   @Test
   void getBeerByUpc() {
-    given(beerService.getByUpc(any())).willReturn(validBeer);
+    given(beerService.getByUpc(any())).willReturn(Mono.just(validBeer));
 
     webTestClient
         .get()
@@ -76,7 +77,7 @@ public class BeerControllerTest {
   @Test
   void getBeerById() {
     var beerId = UUID.randomUUID();
-    given(beerService.getById(any(), any())).willReturn(validBeer);
+    given(beerService.getById(any(), any())).willReturn(Mono.just(validBeer));
 
     webTestClient
         .get()
