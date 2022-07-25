@@ -59,6 +59,15 @@ public class BeerHandler {
         .flatMap(beerDto -> ServerResponse.noContent().build());
   }
 
+  public Mono<ServerResponse> deleteBeer(ServerRequest request) {
+    var beerId = Integer.valueOf(request.pathVariable("beerId"));
+
+    return beerService
+        .reactiveDeleteBeerById(beerId)
+        .flatMap(voidMono -> ServerResponse.ok().build())
+        .onErrorResume(e -> e instanceof NotFoundException, e -> ServerResponse.notFound().build());
+  }
+
   private void validate(BeerDto beerDto) {
     var errors = new BeanPropertyBindingResult(beerDto, "beerDto");
     validator.validate(beerDto, errors);

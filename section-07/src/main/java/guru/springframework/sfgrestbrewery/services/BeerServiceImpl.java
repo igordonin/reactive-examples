@@ -2,6 +2,7 @@ package guru.springframework.sfgrestbrewery.services;
 
 import guru.springframework.sfgrestbrewery.domain.Beer;
 import guru.springframework.sfgrestbrewery.repositories.BeerRepository;
+import guru.springframework.sfgrestbrewery.web.controller.NotFoundException;
 import guru.springframework.sfgrestbrewery.web.mappers.BeerMapper;
 import guru.springframework.sfgrestbrewery.web.model.BeerDto;
 import guru.springframework.sfgrestbrewery.web.model.BeerPagedList;
@@ -14,7 +15,6 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
@@ -123,6 +123,15 @@ public class BeerServiceImpl implements BeerService {
   }
 
   @Override
+  public Mono<Void> reactiveDeleteBeerById(Integer beerId) {
+    return beerRepository
+        .findById(beerId)
+        .switchIfEmpty(Mono.error(new NotFoundException()))
+        .map(Beer::getId)
+        .flatMap(beerRepository::deleteById);
+  }
+
+  @Override
   public Mono<BeerDto> saveBeer(Mono<BeerDto> beerDtoMono) {
     return beerDtoMono
         .map(beerMapper::beerDtoToBeer)
@@ -132,9 +141,9 @@ public class BeerServiceImpl implements BeerService {
 
   @Override
   public Mono<BeerDto> updateBeerByMono(Integer beerId, Mono<BeerDto> beerDtoMono) {
-    return beerDtoMono.map(beerMapper::beerDtoToBeer)
-            .flatMap(beerRepository::save)
-            .map(beerMapper::beerToBeerDto);
-
+    return beerDtoMono
+        .map(beerMapper::beerDtoToBeer)
+        .flatMap(beerRepository::save)
+        .map(beerMapper::beerToBeerDto);
   }
 }

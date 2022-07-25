@@ -24,6 +24,8 @@ public interface BeerService {
 
   void deleteBeerById(Integer beerId);
 
+  Mono<Void> reactiveDeleteBeerById(Integer beerId);
+
   Mono<BeerDto> saveBeer(Mono<BeerDto> beerDtoMono);
 
   Mono<BeerDto> updateBeerByMono(Integer beerId, Mono<BeerDto> beerDtoMono);
