@@ -6,21 +6,25 @@ import guru.springframework.sfgrestbrewery.web.model.BeerStyleEnum;
 import org.springframework.data.domain.PageRequest;
 import reactor.core.publisher.Mono;
 
-/**
- * Created by jt on 2019-04-20.
- */
+/** Created by jt on 2019-04-20. */
 public interface BeerService {
-    Mono<BeerPagedList> listBeers(String beerName, BeerStyleEnum beerStyle, PageRequest pageRequest, Boolean showInventoryOnHand);
+  Mono<BeerPagedList> listBeers(
+      String beerName,
+      BeerStyleEnum beerStyle,
+      PageRequest pageRequest,
+      Boolean showInventoryOnHand);
 
-    Mono<BeerDto> getById(Integer beerId, Boolean showInventoryOnHand);
+  Mono<BeerDto> getById(Integer beerId, Boolean showInventoryOnHand);
 
-    Mono<BeerDto> saveNewBeer(BeerDto beerDto);
+  Mono<BeerDto> saveNewBeer(BeerDto beerDto);
 
-    Mono<BeerDto> updateBeer(Integer beerId, BeerDto beerDto);
+  Mono<BeerDto> updateBeer(Integer beerId, BeerDto beerDto);
 
-    Mono<BeerDto> getByUpc(String upc);
+  Mono<BeerDto> getByUpc(String upc);
 
-    void deleteBeerById(Integer beerId);
+  void deleteBeerById(Integer beerId);
 
-    Mono<BeerDto> saveBeer(Mono<BeerDto> beerDtoMono);
+  Mono<BeerDto> saveBeer(Mono<BeerDto> beerDtoMono);
+
+  Mono<BeerDto> updateBeerByMono(Integer beerId, Mono<BeerDto> beerDtoMono);
 }

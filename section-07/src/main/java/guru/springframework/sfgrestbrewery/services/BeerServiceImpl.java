@@ -14,6 +14,7 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
@@ -127,5 +128,13 @@ public class BeerServiceImpl implements BeerService {
         .map(beerMapper::beerDtoToBeer)
         .flatMap(beerRepository::save)
         .map(beerMapper::beerToBeerDto);
+  }
+
+  @Override
+  public Mono<BeerDto> updateBeerByMono(Integer beerId, Mono<BeerDto> beerDtoMono) {
+    return beerDtoMono.map(beerMapper::beerDtoToBeer)
+            .flatMap(beerRepository::save)
+            .map(beerMapper::beerToBeerDto);
+
   }
 }

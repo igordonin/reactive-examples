@@ -40,14 +40,23 @@ public class BeerHandler {
         .switchIfEmpty(ServerResponse.notFound().build());
   }
 
-  public Mono<ServerResponse> saveBeer(ServerRequest serverRequest) {
-    var beerDtoMono = serverRequest.bodyToMono(BeerDto.class).doOnNext(this::validate);
+  public Mono<ServerResponse> saveBeer(ServerRequest request) {
+    var beerDtoMono = request.bodyToMono(BeerDto.class).doOnNext(this::validate);
 
     return beerService
         .saveBeer(beerDtoMono)
         .flatMap(
             beerDto ->
                 ServerResponse.ok().header("location", BEER_URL + "/" + beerDto.getId()).build());
+  }
+
+  public Mono<ServerResponse> updateBeer(ServerRequest request) {
+    var beerId = Integer.valueOf(request.pathVariable("beerId"));
+    var beerDtoMono = request.bodyToMono(BeerDto.class).doOnNext(this::validate);
+
+    return beerService
+        .updateBeerByMono(beerId, beerDtoMono)
+        .flatMap(beerDto -> ServerResponse.noContent().build());
   }
 
   private void validate(BeerDto beerDto) {
